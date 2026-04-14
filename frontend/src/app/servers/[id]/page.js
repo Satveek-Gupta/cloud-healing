@@ -45,7 +45,7 @@ export default function ServerDetail({ params }) {
           fetch(`${BACKEND_URL}/api/servers/${serverId}`),
           fetch(`${BACKEND_URL}/api/metrics/${serverId}?limit=10`),
         ]);
-        if (sr.ok) { const data = await sr.json(); setServer(data); setLoading(false); }
+        if (sr.ok) { const data = await sr.json(); setServer(data); }
         if (mr.ok) {
           const mData = await mr.json();
           setMetrics(mData);
@@ -53,7 +53,10 @@ export default function ServerDetail({ params }) {
           const logLines = mData.filter(m => m.logs).flatMap(m => m.logs.split('\n')).slice(0, 15);
           setLogs(logLines);
         }
-      } catch (_) {}
+      } catch (_) {
+      } finally {
+        setLoading(false);
+      }
     };
     fetchAll();
     const id = setInterval(fetchAll, 5000);

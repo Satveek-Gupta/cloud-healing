@@ -17,11 +17,12 @@ const ACTION_META = {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** Critical when CPU > threshold OR error-like logs (not memory-only). */
+/** Critical when CPU > threshold OR genuine error/fatal logs (not warnings or memory-only). */
 function deriveStatus(cpu, memory, logs) {
   const cpuNum = typeof cpu === 'number' ? cpu : parseFloat(cpu) || 0;
   const logsStr = (logs || '').toLowerCase();
-  const hasErrorLog = /\b(error|critical|crit|fatal|exception|panic|oom|killed)\b/.test(logsStr);
+  // Only real server-side failures → critical (not macOS/system warnings)
+  const hasErrorLog = /\b(fatal|exception|panic|oom kill|killed process|segfault|out of memory)\b/.test(logsStr);
   if (cpuNum > CPU_CRITICAL || hasErrorLog) return 'critical';
   return 'healthy';
 }

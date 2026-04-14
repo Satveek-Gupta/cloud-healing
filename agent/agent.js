@@ -43,7 +43,7 @@ const CONFIG = {
 // ── Anomaly thresholds ────────────────────────────────────────────────────
 const THRESHOLD = {
   cpu:    85,   // % — triggers high_cpu anomaly
-  memory: 80,   // % — triggers memory_issue anomaly
+  memory: 90,   // % — triggers memory_issue anomaly
   disk:   90,   // % — triggers disk_pressure anomaly
 };
 
@@ -158,12 +158,12 @@ function getLocalIp() {
 // ── Raw log collection ────────────────────────────────────────────────────
 function getRawLogs() {
   const cmds = [
-    // Linux journalctl (filtered)
-    'journalctl -n 30 --no-pager -p err 2>/dev/null | grep -iE "error|crit|fatal|oom" | tail -10',
+    // Linux journalctl (filtered to ignore benign bot scans)
+    'journalctl -n 30 --no-pager -p err 2>/dev/null | grep -iE "error|crit|fatal|oom" | grep -vEi "kex_exchange_identification|Connection closed by remote host" | tail -10',
     // macOS system log
-    'log show --last 30s --style compact 2>/dev/null | grep -iE "error|crit|warn" | tail -8',
-    // syslog fallback (filtered to avoid benign warnings like 'ITS mitigation')
-    'tail -n 30 /var/log/syslog 2>/dev/null | grep -iE "error|crit|fatal|oom" | tail -10',
+    'log show --last 30s --style compact 2>/dev/null | grep -iE "error|crit|warn" | grep -vEi "kex_exchange_identification|Connection closed by remote host" | tail -8',
+    // syslog fallback
+    'tail -n 30 /var/log/syslog 2>/dev/null | grep -iE "error|crit|fatal|oom" | grep -vEi "kex_exchange_identification|Connection closed by remote host" | tail -10',
   ];
   for (const cmd of cmds) {
     try {

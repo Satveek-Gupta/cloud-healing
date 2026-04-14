@@ -5,7 +5,7 @@ const { broadcastServers } = require('../lib/ws');
 const router = Router();
 
 // A server is considered OFFLINE if it hasn't sent metrics in this many ms
-const STALE_THRESHOLD_MS = 60_000; // 60 seconds — gives 10s-interval agents 5 missed beats before offline
+const STALE_THRESHOLD_MS = 90_000; // 90 seconds — gives 20s-interval agents ~4 missed beats before offline
 
 function applyOnlineStatus(server) {
   const lastSeen = new Date(server.last_seen).getTime();

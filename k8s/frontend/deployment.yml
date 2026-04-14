@@ -15,21 +15,22 @@ spec:
         apps: frontend
     spec:
       containers:
-        image: <username>/frontend-Deployment
-        env:
-          - name: VITE_API_URL
-            valueFrom:
-              configMapKeyRef:
-                name: cloud-healing-config
-                key: VITE_API_URL
-        ports:
-          - containerPort: 80
-        resources:
-          requests:
-            cpu: "128m"
-            memory: "256Mi"
-          limits:
-            cpu: "256m"
-            memory: "512Mi"
+        - name: frontend
+          image: <username>/frontend-Deployment
+          env:
+            - name: VITE_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cloud-healing-config
+                  key: VITE_API_URL
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "128m"
+              memory: "256Mi"
+            limits:
+              cpu: "256m"
+              memory: "512Mi"
 
-    
+      

@@ -1,0 +1,38 @@
+[Unit]
+Description=SelfHeal Smart Node Agent
+Documentation=https://github.com/Satveek-Gupta
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/agent
+
+# Make sure systemd can find node regardless of install method (nvm / nodesource / apt)
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Environment — edit these values directly or use EnvironmentFile
+Environment="BACKEND_URL=https://cloud-heal-backend-hf4nb.ondigitalocean.app"
+Environment="SERVER_NAME=lightsail-1"
+Environment="REGION=ap-south-1"
+Environment="REPORT_INTERVAL=10000"
+Environment="COMMAND_INTERVAL=5000"
+# Alternatively, load from a file:
+# EnvironmentFile=/home/ubuntu/agent/.env
+
+ExecStart=/usr/bin/env node /home/ubuntu/agent/agent.js
+
+# Auto-restart on crash
+Restart=always
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=5
+
+# Logging — view with: journalctl -u selfheal-agent -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=selfheal-agent
+
+[Install]
+WantedBy=multi-user.target

@@ -17,6 +17,20 @@ const path = require('path');
 const fs   = require('fs');
 const { execSync, exec, spawn } = require('child_process');
 
+// ── Minimal .env parser ───────────────────────────────────────────────────
+try {
+  const envFile = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+  for (const line of envFile.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const [key, ...val] = trimmed.split('=');
+    if (key && !process.env[key]) {
+      process.env[key] = val.join('=').trim();
+    }
+  }
+} catch { /* No .env file, ignore */ }
+
+
 // ── Config ────────────────────────────────────────────────────────────────
 const CONFIG = {
   backendUrl:      process.env.BACKEND_URL    || 'http://localhost:8000',
@@ -144,12 +158,12 @@ function getLocalIp() {
 // ── Raw log collection ────────────────────────────────────────────────────
 function getRawLogs() {
   const cmds = [
-    // Linux journalctl
-    'journalctl -n 10 --no-pager -p err 2>/dev/null',
+    // Linux journalctl (filtered)
+    'journalctl -n 30 --no-pager -p err 2>/dev/null | grep -iE "error|crit|fatal|oom" | tail -10',
     // macOS system log
     'log show --last 30s --style compact 2>/dev/null | grep -iE "error|crit|warn" | tail -8',
-    // syslog fallback
-    'tail -n 10 /var/log/syslog 2>/dev/null',
+    // syslog fallback (filtered to avoid benign warnings like 'ITS mitigation')
+    'tail -n 30 /var/log/syslog 2>/dev/null | grep -iE "error|crit|fatal|oom" | tail -10',
   ];
   for (const cmd of cmds) {
     try {

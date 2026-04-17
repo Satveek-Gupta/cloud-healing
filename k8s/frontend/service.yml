@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: frontend-Service
+  namespace: cloud-healing
+spec:
+  selector:
+    apps: frontend
+  ports:  
+    - protocol: "TCP"
+      port: 80
+      targetPort: 80
+  type: NodePort

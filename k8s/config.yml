@@ -1,0 +1,13 @@
+kind: ConfigMap
+apiVersion: v1
+metadata: 
+  name: cloud-healing-config
+  namespace: cloud-healing
+data:
+  VITE_API_URL: http://backend:5000
+  SUPABASE_URL: https://your-project.supabase.co
+  GEMINI_MODEL: gemini-2.0-flash
+  ANTHROPIC_MODEL: claude-3-5-haiku-20241022
+  OPENAI_MODEL: gpt-4o-mini
+  ALLOW_AI_MOCK: false
+  PORT: 5000

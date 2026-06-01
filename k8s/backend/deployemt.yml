@@ -1,0 +1,77 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: backend-Deployment
+  namespace: cloud-healing
+spec: 
+  replicas: 3 
+  selector:
+    matchLabels: 
+      apps: backend
+  template: 
+    metadata: 
+      name: backend-Deployment
+      labels: 
+        apps: backend
+    spec:
+      containers:
+        name: backend-Deployment
+        image: <username>/backend-Deployment
+        env:
+            - name: SUPABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cloud-healing-config
+                  key: SUPABASE_URL
+            - name: SUPABASE_KEY
+              valueFrom:  
+                secretKeyRef:
+                  name: cloud-cloud-healing-Secret
+                  key: SUPABASE_KEY
+            - name: GEMINI_MODEL
+              valueFrom: 
+                configMapKeyRef:
+                  name: cloud-healing-config
+                  key: GEMINI_MODEL
+            - name: GEMINI_API_KEY
+              valueFrom:  
+                secretKeyRef:
+                  name: cloud-healing-Secret
+                  key: GEMINI_API_KEY=
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cloud-healing-Secret
+                  key: OPENAI_API_KEY=
+            - name: OPENAI_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: cloud-healing-config
+                  key: OPENAI_MODEL
+            - name: ANTHROPIC_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: cloud-healing-config
+                  key: ANTHROPIC_MODEL
+            - name: ANTHROPIC_API_KEY
+              valueFrom: 
+                secretKeyRef:
+                  name: cloud-healing-Secret
+                  key: ANTHROPIC_API_KEY
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloud-healing-config
+                  key: PORT
+            - name: ALLOW_AI_MOCK
+              valueFrom: 
+                configMapKeyRef:
+                  name: cloud-healing-config
+                  key: ALLOW_AI_MOCK
+        resources:  
+          requests: 
+            cpu: "128m"
+            memory: "256Mi"
+          limits: 
+            cpu: "256m"
+            memory: "512Mi"

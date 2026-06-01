@@ -1,5 +1,28 @@
 # ☁️ Cloud-Heal: AI-Powered Self-Healing Infrastructure
 
+<p align="center">
+  <a href="https://github.com/Satveek-Gupta/cloud-healing">
+    <img src="https://img.shields.io/github/stars/Satveek-Gupta/cloud-healing?style=for-the-badge&logo=github&logoColor=white&color=24292e" alt="Stars">
+  </a>
+  <a href="https://github.com/Satveek-Gupta/cloud-healing/issues">
+    <img src="https://img.shields.io/github/issues/Satveek-Gupta/cloud-healing?style=for-the-badge&logo=github&logoColor=white&color=d73a49" alt="Issues">
+  </a>
+  <a href="https://github.com/Satveek-Gupta/cloud-healing/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License">
+  </a>
+  <a href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/Satveek-Gupta/cloud-healing">
+    <img src="https://img.shields.io/badge/Deploy%20To-DigitalOcean-0080FF?style=for-the-badge&logo=digitalocean&logoColor=white" alt="Deploy to DigitalOcean">
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Frontend-Next.js_14-black?style=flat-square&logo=next.js" alt="Next.js">
+  <img src="https://img.shields.io/badge/Backend-Express.js-000000?style=flat-square&logo=express" alt="Express.js">
+  <img src="https://img.shields.io/badge/Database-Supabase-3ECF8E?style=flat-square&logo=supabase" alt="Supabase">
+  <img src="https://img.shields.io/badge/Agent-Node.js-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js Agent">
+  <img src="https://img.shields.io/badge/AI-Gemini_Flash-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini Flash">
+</p>
+
 Cloud-Heal is a production-grade infrastructure monitoring and automated remediation system. It combines real-time metrics collection, AI-driven anomaly detection, and autonomous "self-healing" actions to keep your cloud servers healthy without manual intervention.
 
 ---

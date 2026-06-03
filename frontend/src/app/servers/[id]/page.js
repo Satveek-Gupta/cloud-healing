@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-
+import { useRouter }     from 'next/navigation';
+import { usePageTitle }  from '@/hooks/usePageTitle';
 import BACKEND_URL from '@/lib/config';
+
 
 function MetricBar({ label, value, maxVal = 100 }) {
   const num = parseFloat(value) || 0;
@@ -32,10 +33,14 @@ export default function ServerDetail({ params }) {
   const [logs, setLogs] = useState([]);
   const [serverId, setServerId] = useState(null);
 
+  // Set page title dynamically once server name is known
+  usePageTitle(server?.name ? server.name : 'Server Detail');
+
   // Next.js 15+ params is a Promise — unwrap it
   useEffect(() => {
     Promise.resolve(params).then(p => setServerId(p?.id));
   }, [params]);
+
 
   useEffect(() => {
     if (!serverId) return;

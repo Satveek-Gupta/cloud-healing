@@ -1,8 +1,12 @@
 "use client";
-import { useState } from 'react';
-import { useRealtime } from '@/context/RealtimeContext';
+import { useState }     from 'react';
+import { useRealtime }  from '@/context/RealtimeContext';
+import { usePageTitle } from '@/hooks/usePageTitle';
+
 
 export default function History() {
+  usePageTitle('Incident Log');
+
   const { events } = useRealtime();
   const [filter, setFilter] = useState('ALL');
 

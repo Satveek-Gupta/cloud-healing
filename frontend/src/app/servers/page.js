@@ -1,10 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
-import { useRealtime } from '@/context/RealtimeContext';
+import { useRealtime }  from '@/context/RealtimeContext';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import BACKEND_URL from '@/lib/config';
+
 import ServerFleetCard from '@/components/ServerFleetCard';
 
 export default function Servers() {
+  usePageTitle('Servers');
   const { servers, removeServer } = useRealtime();
   const [prevStatuses, setPrevStatuses] = useState({});
   const [showForm, setShowForm] = useState(false);

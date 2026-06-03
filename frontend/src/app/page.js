@@ -1,23 +1,9 @@
 "use client";
-import { useState, useCallback } from 'react';
-import Link from 'next/link';
-import { useRealtime } from '@/context/RealtimeContext';
+import Link  from 'next/link';
+import Image from 'next/image';
+import { useRealtime }   from '@/context/RealtimeContext';
+import { usePageTitle }  from '@/hooks/usePageTitle';
 
-import BACKEND_URL from '@/lib/config';
-
-const FAILURE_TYPES = [
-  { id: 'HIGH_CPU',        label: 'High CPU',    icon: '🔥', desc: 'Runaway thread pool spike'  },
-  { id: 'HIGH_ERROR_RATE', label: 'Error Surge', icon: '💥', desc: 'HTTP 5xx cascade failure'    },
-  { id: 'MEMORY_LEAK',     label: 'Memory Leak', icon: '💾', desc: 'OOM kill loop triggered'     },
-];
-
-const DEMO_STEPS = [
-  { id: 1, label: 'Fleet Connected',   icon: '🌐', sub: 'Servers registered and sending metrics'  },
-  { id: 2, label: 'Failure Injected',  icon: '💥', sub: 'Critical threshold crossed'              },
-  { id: 3, label: 'AI Diagnosing',     icon: '🧠', sub: 'Root cause analysis in progress'         },
-  { id: 4, label: 'Action Dispatched', icon: '⚡', sub: 'Remediation command executing'           },
-  { id: 5, label: 'System Recovered',  icon: '✅', sub: 'All nodes back to healthy'               },
-];
 
 function ActivityFeed({ events }) {
   if (!events.length) return (
@@ -30,8 +16,10 @@ function ActivityFeed({ events }) {
     <div className="activity-feed">
       {events.slice(0, 6).map((e, i) => (
         <div key={e.id || i} className={`activity-item ${i === 0 ? 'activity-item-new' : ''}`}>
-          <span className={`activity-dot ${e.type === 'ALERT' ? 'dot-danger' : 'dot-success'}`}
-            style={{ width: 7, height: 7, flexShrink: 0 }} />
+          <span
+            className={`activity-dot ${e.type === 'ALERT' ? 'dot-danger' : 'dot-success'}`}
+            style={{ width: 7, height: 7, flexShrink: 0 }}
+          />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {e.node}
@@ -54,65 +42,80 @@ function ActivityFeed({ events }) {
   );
 }
 
-const delay = ms => new Promise(r => setTimeout(r, ms));
+function ServerMiniCard({ s }) {
+  const statusColor = s.status === 'healthy' ? 'var(--success)' : s.status === 'critical' ? 'var(--danger)' : s.status === 'recovering' ? 'var(--healing)' : 'var(--text-tertiary)';
+  const dotCls = s.status === 'healthy' ? 'dot-success' : s.status === 'critical' ? 'dot-danger' : 'dot-warn';
+  return (
+    <Link href={`/servers/${s.id}`} style={{ textDecoration: 'none' }}>
+      <div className="card card-clickable" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem' }}>
+        <span className={`status-dot ${dotCls}`} style={{ width: 8, height: 8, flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: '0.82rem', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {s.name}
+          </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 2 }}>
+            {s.region || 'unknown'} · {s.ip_address}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: statusColor, fontWeight: 700 }}>
+            {s.cpu || '—'}
+          </div>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', marginTop: 2 }}>CPU</div>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 export default function Home() {
-  const { servers, events, stats } = useRealtime();
-  const [selected, setSelected] = useState('HIGH_CPU');
-  const [demoBusy, setDemoBusy] = useState(false);
-  const [demoStep, setDemoStep] = useState(0);
-  const [demoMsg,  setDemoMsg]  = useState('');
+  usePageTitle('Overview');
+  const { servers, events, stats, wsConnected } = useRealtime();
 
-  const healthy  = servers.filter(s => s.status === 'healthy').length;
-  const critical = servers.filter(s => s.status === 'critical').length;
 
-  const runDemo = useCallback(async () => {
-    if (demoBusy || !selected) return;
-    setDemoBusy(true);
-    setDemoStep(1); setDemoMsg('Fleet is connected and healthy...');
-    await delay(1500);
-    setDemoStep(2); setDemoMsg('Injecting failure scenario...');
-    try {
-      await fetch(`${BACKEND_URL}/api/simulate`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ failureType: selected }),
-      });
-    } catch (_) {}
-    setDemoStep(3); setDemoMsg('AI engine analyzing root cause...');
-    await delay(4000);
-    setDemoStep(4); setDemoMsg('Dispatching remediation action...');
-    await delay(2500);
-    setDemoStep(5); setDemoMsg('System recovered. All nodes healthy ✅');
-    await delay(6000);
-    setDemoStep(0); setDemoMsg(''); setDemoBusy(false);
-  }, [demoBusy, selected]);
-
-  const selectedMeta = FAILURE_TYPES.find(f => f.id === selected);
+  const healthy   = servers.filter(s => s.status === 'healthy').length;
+  const critical  = servers.filter(s => s.status === 'critical').length;
+  const offline   = servers.filter(s => s.status === 'offline').length;
+  const recovering = servers.filter(s => s.status === 'recovering').length;
 
   return (
     <div className="fade-in">
       {/* ── Hero Banner ── */}
       <div className="overview-hero slide-up">
         <div className="overview-hero-left">
+          <Image
+            src="/SelfHeal.png"
+            alt="SelfHeal"
+            width={56}
+            height={56}
+            style={{ borderRadius: 12, flexShrink: 0 }}
+            priority
+          />
           <div className="overview-status-orb" data-status={critical > 0 ? 'critical' : 'healthy'} />
           <div>
-            <div className="overview-status-label">{critical > 0 ? '⚠ ACTIVE INCIDENT' : '✅ ALL SYSTEMS OPERATIONAL'}</div>
+            <div className="overview-status-label">
+              {critical > 0 ? '⚠ ACTIVE INCIDENT' : recovering > 0 ? '🔄 RECOVERING' : '✅ ALL SYSTEMS OPERATIONAL'}
+            </div>
             <div className="overview-status-sub">
               {servers.length} nodes · {healthy} healthy · {critical} critical
+              {offline > 0 && ` · ${offline} offline`}
               {stats?.uptime && ` · Uptime ${stats.uptime}`}
             </div>
           </div>
         </div>
-        <div className="live-indicator"><span className="live-dot" />WS LIVE</div>
+        <div className="live-indicator">
+          <span className="live-dot" style={{ background: wsConnected === false ? 'var(--danger)' : undefined }} />
+          {wsConnected === false ? 'DISCONNECTED' : 'LIVE'}
+        </div>
       </div>
 
       {/* ── Stat Tiles ── */}
       <div className="grid-4 slide-up delay-1" style={{ marginBottom: '1.5rem' }}>
         {[
-          { label: 'Connected Nodes', val: servers.length, color: 'var(--accent)',   cls: 'stat-card-accent'   },
-          { label: 'Healthy',         val: healthy,         color: 'var(--success)',  cls: 'stat-card-success'  },
-          { label: 'Critical',        val: critical,        color: critical > 0 ? 'var(--danger)' : undefined, cls: critical > 0 ? 'stat-card-danger' : '' },
-          { label: 'Total Incidents', val: events.length,   color: 'var(--healing)', cls: '' },
+          { label: 'Connected Nodes', val: servers.length,  color: 'var(--accent)',   cls: 'stat-card-accent'  },
+          { label: 'Healthy',         val: healthy,          color: 'var(--success)',  cls: 'stat-card-success' },
+          { label: 'Critical',        val: critical,         color: critical > 0 ? 'var(--danger)' : undefined, cls: critical > 0 ? 'stat-card-danger' : '' },
+          { label: 'Total Incidents', val: events.length,    color: 'var(--healing)', cls: '' },
         ].map(({ label, val, color, cls }) => (
           <div key={label} className={`card stat-card ${cls}`}>
             <div className="stat-label">{label}</div>
@@ -122,50 +125,26 @@ export default function Home() {
       </div>
 
       <div className="grid-2 slide-up delay-2">
-        {/* ── Demo Control Panel ── */}
-        <div className="card" style={{ borderColor: demoBusy ? 'rgba(239,68,68,0.3)' : undefined }}>
-          <div className="card-header">Demo Control Panel <span className="badge badge-warning">Live Mode</span></div>
-          <div className="demo-steps">
-            {DEMO_STEPS.map(step => {
-              const done = demoStep > step.id, active = demoStep === step.id;
-              return (
-                <div key={step.id} className={`demo-step ${done ? 'done' : ''} ${active ? 'active' : ''}`}>
-                  <div className="demo-step-icon">{done ? '✓' : step.icon}</div>
-                  <div className="demo-step-body">
-                    <div className="demo-step-label">{step.label}</div>
-                    {active && <div className="demo-step-sub">{demoMsg || step.sub}</div>}
-                  </div>
-                  {step.id < DEMO_STEPS.length && <div className="demo-step-line" />}
-                </div>
-              );
-            })}
+        {/* ── Live Server List ── */}
+        <div className="card">
+          <div className="card-header">
+            Connected Servers
+            <span className="live-indicator" style={{ fontSize: '0.6rem' }}><span className="live-dot" />WS</span>
           </div>
-          {!demoBusy && (
-            <>
-              <div className="failure-type-grid" style={{ marginTop: '1rem' }}>
-                {FAILURE_TYPES.map(ft => (
-                  <button key={ft.id} className={`failure-type-btn ${selected === ft.id ? 'selected' : ''}`}
-                    onClick={() => setSelected(ft.id)}>
-                    <span className="btn-icon">{ft.icon}</span>
-                    <span>{ft.label}</span>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)' }}>{ft.desc}</span>
-                  </button>
-                ))}
-              </div>
-              <button onClick={runDemo} disabled={demoBusy}
-                className="btn btn-danger btn-lg" style={{ width: '100%', marginTop: '0.875rem' }}>
-                ⚡ Start Demo — Inject {selectedMeta?.label}
-              </button>
-            </>
-          )}
-          {demoBusy && (
-            <div className="demo-running">
-              <div className="spin" style={{ fontSize: '1.5rem' }}>⚙️</div>
-              <div>
-                <div style={{ fontWeight: 700, color: 'var(--danger)' }}>Demo Running</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 2 }}>{demoMsg}</div>
-              </div>
+          {servers.length === 0 ? (
+            <div className="activity-empty">
+              <span style={{ fontSize: '1.5rem', opacity: 0.25 }}>🖥️</span>
+              <span>No servers registered. Run the agent to connect a node.</span>
             </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {servers.slice(0, 6).map(s => <ServerMiniCard key={s.id} s={s} />)}
+            </div>
+          )}
+          {servers.length > 0 && (
+            <Link href="/servers" className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: '0.875rem' }}>
+              View All {servers.length} Servers →
+            </Link>
           )}
         </div>
 
@@ -185,11 +164,11 @@ export default function Home() {
       </div>
 
       {/* ── Quick Nav ── */}
-      <div className="grid-3 slide-up delay-3">
+      <div className="grid-3 slide-up delay-3" style={{ marginTop: '1.5rem' }}>
         {[
-          { href: '/dashboard', icon: '📊', label: 'Dashboard',     sub: 'Live telemetry & AI cards' },
-          { href: '/servers',   icon: '🖥️',  label: 'Servers',      sub: `${servers.length} nodes connected` },
-          { href: '/history',   icon: '📋',  label: 'Incident Log',  sub: `${events.length} total events` },
+          { href: '/dashboard', icon: '📊', label: 'Dashboard',    sub: 'Live telemetry & AI diagnosis' },
+          { href: '/servers',   icon: '🖥️',  label: 'Servers',     sub: `${servers.length} nodes connected` },
+          { href: '/history',   icon: '📋',  label: 'Incident Log', sub: `${events.length} total events` },
         ].map(({ href, icon, label, sub }) => (
           <Link key={href} href={href}>
             <div className="card card-clickable" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.25rem' }}>

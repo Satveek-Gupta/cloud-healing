@@ -1,25 +1,32 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev":   "node --watch server.js",
-    "test":  "echo \"No tests yet\" && exit 0"
+  "name": "selfheal-backend",
+  "version": "2.0.0",
+  "description": "SelfHeal — AI-powered self-healing infrastructure backend",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18.0.0"
   },
-  "keywords": [],
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "selfheal",
+    "infrastructure",
+    "ai",
+    "sre"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.88.0",
     "@google/generative-ai": "^0.21.0",
     "@supabase/supabase-js": "^2.103.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "openai": "^6.34.0",
-    "ws": "^8.20.0"
+    "helmet": "^8.2.0",
+    "openai": "^6.34.0"
   }
 }

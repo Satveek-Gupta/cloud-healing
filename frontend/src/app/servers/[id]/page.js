@@ -26,7 +26,8 @@ function MetricBar({ label, value, maxVal = 100 }) {
 
 export default function ServerDetail({ params }) {
   const router = useRouter();
-  const { authFetch } = useRealtime() || {};
+  const { authFetch, currentUser } = useRealtime() || {};
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPERADMIN';
   const [server, setServer]   = useState(null);
   const [metrics, setMetrics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -149,29 +150,41 @@ export default function ServerDetail({ params }) {
             </div>
           )}
 
-          {/* Action Buttons */}
+          {/* Action Buttons — ADMIN/SUPERADMIN only */}
           <div className="card">
             <div className="card-header">Remediation Actions</div>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.875rem' }}>
-              Commands are dispatched to the running agent on this server.
-            </p>
-            <div className="action-grid">
-              {ACTIONS.map(({ key, cls, icon, label, sub }) => (
-                <button key={key} className={`action-btn ${cls}`}
-                  onClick={() => dispatchCommand(key)} disabled={!!dispatchingAction}>
-                  <span className="action-icon">{dispatchingAction === key ? '⏳' : icon}</span>
-                  <span className="action-label">{label}</span>
-                  <span className="action-sub">{sub}</span>
-                </button>
-              ))}
-            </div>
-            {actionStatus && (
+            {isAdmin ? (
+              <>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.875rem' }}>
+                  Commands are dispatched to the running agent on this server.
+                </p>
+                <div className="action-grid">
+                  {ACTIONS.map(({ key, cls, icon, label, sub }) => (
+                    <button key={key} className={`action-btn ${cls}`}
+                      onClick={() => dispatchCommand(key)} disabled={!!dispatchingAction}>
+                      <span className="action-icon">{dispatchingAction === key ? '⏳' : icon}</span>
+                      <span className="action-label">{label}</span>
+                      <span className="action-sub">{sub}</span>
+                    </button>
+                  ))}
+                </div>
+                {actionStatus && (
+                  <div style={{
+                    marginTop: '0.875rem', padding: '0.625rem 0.875rem', borderRadius: 'var(--radius-sm)',
+                    background: actionStatus.type === 'success' ? 'var(--success-bg)' : 'var(--danger-bg)',
+                    border: `1px solid ${actionStatus.type === 'success' ? 'var(--success-border)' : 'var(--danger-border)'}`,
+                    fontSize: '0.8rem', color: actionStatus.type === 'success' ? 'var(--success)' : 'var(--danger)',
+                  }}>{actionStatus.msg}</div>
+                )}
+              </>
+            ) : (
               <div style={{
-                marginTop: '0.875rem', padding: '0.625rem 0.875rem', borderRadius: 'var(--radius-sm)',
-                background: actionStatus.type === 'success' ? 'var(--success-bg)' : 'var(--danger-bg)',
-                border: `1px solid ${actionStatus.type === 'success' ? 'var(--success-border)' : 'var(--danger-border)'}`,
-                fontSize: '0.8rem', color: actionStatus.type === 'success' ? 'var(--success)' : 'var(--danger)',
-              }}>{actionStatus.msg}</div>
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: '1.5rem', gap: '0.5rem', color: 'var(--text-tertiary)', textAlign: 'center',
+              }}>
+                <span style={{ fontSize: '1.5rem' }}>🔒</span>
+                <p style={{ fontSize: '0.8rem', margin: 0 }}>Remediation actions are restricted to admins.</p>
+              </div>
             )}
           </div>
         </div>

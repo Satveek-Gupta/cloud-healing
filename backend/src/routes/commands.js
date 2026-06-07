@@ -15,11 +15,14 @@ const commandQueue     = require('../services/commandQueue');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { validateBody } = require('../middleware/validate');
 const { ALLOWED_COMMANDS } = require('../config/constants');
+const { requireAuth } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/admin');
+const { logAuditEvent } = require('../lib/audit');
 
 const router = Router();
 
 // ── GET /api/commands ─────────────────────────────────────────────────────────
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
   res.json(commandQueue.getAll());
 }));
 
@@ -32,11 +35,18 @@ router.get('/:server_id', asyncHandler(async (req, res) => {
 // ── POST /api/commands/:server_id ─────────────────────────────────────────────
 router.post(
   '/:server_id',
+  requireAuth,
+  requireAdmin,
   validateBody({ command: `string|in:${ALLOWED_COMMANDS.join(',')}` }),
   asyncHandler(async (req, res) => {
-    const { command, dispatched_by } = req.body;
+    const { command } = req.body;
     try {
-      const entry = commandQueue.enqueue(req.params.server_id, command, dispatched_by);
+      const entry = commandQueue.enqueue(req.params.server_id, command, req.user.email);
+      await logAuditEvent({
+        actorId: req.user.id,
+        action: 'server.command.dispatch',
+        metadata: { server_id: req.params.server_id, command, ip: req.ip },
+      });
       res.json({ queued: true, ...entry });
     } catch (e) {
       res.status(400).json({ error: e.message });

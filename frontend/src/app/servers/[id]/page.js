@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter }     from 'next/navigation';
 import { usePageTitle }  from '@/hooks/usePageTitle';
+import { useRealtime }   from '@/context/RealtimeContext';
 import BACKEND_URL from '@/lib/config';
 
 
@@ -25,6 +26,7 @@ function MetricBar({ label, value, maxVal = 100 }) {
 
 export default function ServerDetail({ params }) {
   const router = useRouter();
+  const { authFetch } = useRealtime() || {};
   const [server, setServer]   = useState(null);
   const [metrics, setMetrics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,12 +45,12 @@ export default function ServerDetail({ params }) {
 
 
   useEffect(() => {
-    if (!serverId) return;
+    if (!serverId || !authFetch) return;
     const fetchAll = async () => {
       try {
         const [sr, mr] = await Promise.all([
-          fetch(`${BACKEND_URL}/api/servers/${serverId}`),
-          fetch(`${BACKEND_URL}/api/metrics/${serverId}?limit=10`),
+          authFetch(`${BACKEND_URL}/api/servers/${serverId}`),
+          authFetch(`${BACKEND_URL}/api/metrics/${serverId}?limit=10`),
         ]);
         if (sr.ok) { const data = await sr.json(); setServer(data); }
         if (mr.ok) {
@@ -66,15 +68,15 @@ export default function ServerDetail({ params }) {
     fetchAll();
     const id = setInterval(fetchAll, 5000);
     return () => clearInterval(id);
-  }, [serverId]);
+  }, [serverId, authFetch]);
 
   const dispatchCommand = async (command) => {
     setDispatchingAction(command);
     setActionStatus(null);
     try {
-      const r = await fetch(`${BACKEND_URL}/api/commands/${serverId}`, {
+      const r = await authFetch(`${BACKEND_URL}/api/commands/${serverId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command, dispatched_by: 'dashboard' }),
+        body: JSON.stringify({ command }),
       });
       if (r.ok) {
         setActionStatus({ type: 'success', msg: `✅ "${command}" dispatched — agent will execute on next poll.` });

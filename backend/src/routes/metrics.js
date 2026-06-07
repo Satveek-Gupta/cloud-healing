@@ -17,6 +17,7 @@ const { setMemLatestDiagnosis } = require('../lib/liveState');
 const { runHealingPipeline }= require('../services/healingPipeline');
 const { asyncHandler }      = require('../middleware/errorHandler');
 const { validateBody }      = require('../middleware/validate');
+const { requireAuth }       = require('../middleware/auth');
 const {
   MAX_METRICS_LIMIT,
   DEFAULT_METRICS_LIMIT,
@@ -143,7 +144,7 @@ router.post(
 );
 
 // ── GET /api/metrics/:server_id ───────────────────────────────────────────────
-router.get('/:server_id', asyncHandler(async (req, res) => {
+router.get('/:server_id', requireAuth, asyncHandler(async (req, res) => {
   const limit = Math.min(
     parseInt(req.query.limit, 10) || DEFAULT_METRICS_LIMIT,
     MAX_METRICS_LIMIT

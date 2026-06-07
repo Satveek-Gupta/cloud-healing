@@ -3,6 +3,9 @@
 export const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
+export const CLERK_JWT_TEMPLATE =
+  process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE || undefined;
+
 /** WebSocket origin derived from BACKEND_URL (ws / wss). */
 export function getWsBaseUrl() {
   try {

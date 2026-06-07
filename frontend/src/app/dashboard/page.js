@@ -44,6 +44,7 @@ export default function Dashboard() {
     latestDiagnosis,
     timeline,
     wsConnected,
+    authFetch,
   } = useRealtime() || {};
 
   const [incidents, setIncidents] = useState([]);
@@ -53,7 +54,8 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchIncidents = async () => {
       try {
-        const r = await fetch(`${BACKEND_URL}/api/history`);
+        if (!authFetch) return;
+        const r = await authFetch(`${BACKEND_URL}/api/history`);
         if (r.ok) setIncidents(await r.json());
       } catch { /* silent */ } finally {
         setIncidentsLoading(false);
@@ -62,7 +64,7 @@ export default function Dashboard() {
     fetchIncidents();
     const id = setInterval(fetchIncidents, 15_000);
     return () => clearInterval(id);
-  }, []);
+  }, [authFetch]);
 
   const healthyCount    = servers?.filter((s) => s.status === 'healthy').length ?? 0;
   const criticalCount   = servers?.filter((s) => s.status === 'critical').length ?? 0;

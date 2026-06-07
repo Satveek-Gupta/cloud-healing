@@ -1,4 +1,5 @@
 import './globals.css';
+import { ClerkProvider } from '@clerk/nextjs';
 import TopBar   from '@/components/TopBar';
 import { RealtimeProvider } from '@/context/RealtimeContext';
 
@@ -30,23 +31,24 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-      </head>
-      <body>
-        <RealtimeProvider>
-          <div className="shell">
-            <TopBar />
-            <main className="page-content">
-              {children}
-            </main>
-          </div>
-        </RealtimeProvider>
-
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <head>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+        </head>
+        <body>
+          <RealtimeProvider>
+            <div className="shell">
+              <TopBar />
+              <main className="page-content">
+                {children}
+              </main>
+            </div>
+          </RealtimeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

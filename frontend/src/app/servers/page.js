@@ -8,7 +8,8 @@ import ServerFleetCard from '@/components/ServerFleetCard';
 
 export default function Servers() {
   usePageTitle('Servers');
-  const { servers, removeServer } = useRealtime();
+  const { servers, removeServer, authFetch, currentUser } = useRealtime();
+  const isSuperAdmin = currentUser?.role === 'SUPERADMIN';
   const [prevStatuses, setPrevStatuses] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', ip_address: '', region: '' });
@@ -17,7 +18,7 @@ export default function Servers() {
   const [filter, setFilter] = useState('ALL');
 
   const removeFromBackend = async (id) => {
-    const r = await fetch(`${BACKEND_URL}/api/servers/${id}`, { method: 'DELETE' });
+    const r = await authFetch(`${BACKEND_URL}/api/servers/${id}`, { method: 'DELETE' });
     if (!r.ok) throw new Error('remove failed');
     removeServer(id);
   };
@@ -36,8 +37,12 @@ export default function Servers() {
         transitions[ns.id] = old.status;
       }
     });
-    if (Object.keys(transitions).length) setPrevStatuses((p) => ({ ...p, ...transitions }));
+    let t;
+    if (Object.keys(transitions).length) {
+      t = setTimeout(() => setPrevStatuses((p) => ({ ...p, ...transitions })), 0);
+    }
     prevServersRef.current = servers;
+    return () => { if (t) clearTimeout(t); };
   }, [servers]);
 
   const registerServer = async (e) => {
@@ -45,7 +50,7 @@ export default function Servers() {
     if (!form.name || !form.ip_address) return;
     setRegistering(true);
     try {
-      const r = await fetch(`${BACKEND_URL}/api/servers/register-server`, {
+      const r = await authFetch(`${BACKEND_URL}/api/servers/register-server`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -103,13 +108,17 @@ export default function Servers() {
             <span className="live-dot" />
             WS
           </div>
-          <button
-            type="button"
-            onClick={() => setShowForm((v) => !v)}
-            className={`btn btn-sm ${showForm ? 'btn-outline' : 'btn-primary'}`}
-          >
-            {showForm ? '✕ Cancel' : '＋ Register node'}
-          </button>
+          {isSuperAdmin ? (
+            <button
+              type="button"
+              onClick={() => setShowForm((v) => !v)}
+              className={`btn btn-sm ${showForm ? 'btn-outline' : 'btn-primary'}`}
+            >
+              {showForm ? '✕ Cancel' : '＋ Register node'}
+            </button>
+          ) : (
+            <span className="badge badge-info" title="Only the superadmin can register nodes">👁 Read-only</span>
+          )}
         </div>
       </div>
 
@@ -143,7 +152,7 @@ export default function Servers() {
         </div>
       </div>
 
-      {showForm && (
+      {showForm && isSuperAdmin && (
         <div className="card slide-up" style={{ marginBottom: '1.5rem', borderColor: 'var(--border-focus)' }}>
           <div className="card-header">
             Register new node <span className="badge badge-info">Manual</span>

@@ -27,7 +27,8 @@ import {
   createContext, useCallback, useContext,
   useEffect, useRef, useState,
 } from 'react';
-import BACKEND_URL from '@/lib/config';
+import { useAuth } from '@clerk/nextjs';
+import BACKEND_URL, { CLERK_JWT_TEMPLATE } from '@/lib/config';
 
 const Ctx = createContext(null);
 
@@ -60,9 +61,11 @@ function prependIncident(list, incident) {
 }
 
 export function RealtimeProvider({ children }) {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const [servers,         setServers]         = useState([]);
   const [events,          setEvents]          = useState([]);
   const [latestDiagnosis, setLatestDiagnosis] = useState(null);
+  const [currentUser,     setCurrentUser]     = useState(null);
   const [timeline,        setTimeline]        = useState([]);
   const [notifications,   setNotifications]   = useState([]);
   const [realtimeStatus,  setRealtimeStatus]  = useState('connecting');
@@ -71,6 +74,23 @@ export function RealtimeProvider({ children }) {
   const notifId       = useRef(0);
   const prevStatusRef = useRef({});   // id → last known status (for notifications)
   const esRef         = useRef(null); // EventSource ref
+
+  const getBackendToken = useCallback(async () => {
+    const token = await getToken({ template: CLERK_JWT_TEMPLATE });
+    if (!token) throw new Error('No Clerk session token available');
+    return token;
+  }, [getToken]);
+
+  const authFetch = useCallback(async (url, options = {}) => {
+    const token = await getBackendToken();
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }, [getBackendToken]);
 
   // ── Notifications ─────────────────────────────────────────────────────────
   const pushNotification = useCallback((msg, type = 'info') => {
@@ -106,14 +126,18 @@ export function RealtimeProvider({ children }) {
 
   // ── 1. Initial load (two parallel fetches, once on mount) ─────────────────
   useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
     let cancelled = false;
     async function load() {
       try {
-        const [latestRes, historyRes] = await Promise.all([
-          fetch(`${BACKEND_URL}/api/latest`),
-          fetch(`${BACKEND_URL}/api/history?limit=100`),
+        const [meRes, latestRes, historyRes] = await Promise.all([
+          authFetch(`${BACKEND_URL}/api/user/me`),
+          authFetch(`${BACKEND_URL}/api/latest`),
+          authFetch(`${BACKEND_URL}/api/history?limit=100`),
         ]);
         if (cancelled) return;
+
+        if (meRes.ok) setCurrentUser(await meRes.json());
 
         if (latestRes.ok) {
           const { servers: srvs, latest_diagnosis: dx } = await latestRes.json();
@@ -135,16 +159,25 @@ export function RealtimeProvider({ children }) {
     }
     load();
     return () => { cancelled = true; };
-  }, [buildTimeline]);
+  }, [authFetch, buildTimeline, isLoaded, isSignedIn]);
 
   // ── 2. SSE subscription (EventSource — auto-reconnects natively) ───────────
   useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
     mountedRef.current = true;
 
-    function connect() {
+    async function connect() {
       if (!mountedRef.current) return;
 
-      const es = new EventSource(`${BACKEND_URL}/api/events`);
+      let token;
+      try {
+        token = await getBackendToken();
+      } catch {
+        setRealtimeStatus('connecting');
+        return;
+      }
+
+      const es = new EventSource(`${BACKEND_URL}/api/events?token=${encodeURIComponent(token)}`);
       esRef.current = es;
 
       // ── Connected ──
@@ -152,6 +185,11 @@ export function RealtimeProvider({ children }) {
         if (!mountedRef.current) return;
         setRealtimeStatus('live');
         console.log('[SSE] ✅ Connected to event stream');
+      });
+
+      es.addEventListener('session:refresh', () => {
+        es.close();
+        if (mountedRef.current) setTimeout(connect, 500);
       });
 
       // ── Single server updated (most frequent — every heartbeat) ──
@@ -217,7 +255,7 @@ export function RealtimeProvider({ children }) {
       esRef.current?.close();
       esRef.current = null;
     };
-  }, [buildTimeline, pushNotification, notifyStatusChange]);
+  }, [buildTimeline, getBackendToken, isLoaded, isSignedIn, pushNotification, notifyStatusChange]);
 
   // ── 3. Offline sweep — local timestamp math, zero network calls ───────────
   useEffect(() => {
@@ -257,11 +295,13 @@ export function RealtimeProvider({ children }) {
       events,
       stats,
       latestDiagnosis,
+      currentUser,
       timeline,
       notifications,
       wsConnected:    realtimeStatus === 'live',
       realtimeStatus,
       pushNotification,
+      authFetch,
       setServers,
       removeServer,
     }}>

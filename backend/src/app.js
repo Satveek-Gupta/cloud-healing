@@ -14,6 +14,7 @@ const cors          = require('cors');
 const config        = require('./config/env');
 const requestLogger = require('./middleware/requestLogger');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+const { apiLimiter } = require('./middleware/security');
 const apiRouter     = require('./routes/index');
 
 function createApp() {
@@ -21,24 +22,36 @@ function createApp() {
 
   // ── Security headers ────────────────────────────────────────────────────
   // helmet sets X-Content-Type-Options, X-Frame-Options, removes X-Powered-By, etc.
+  app.disable('x-powered-by');
+  app.set('trust proxy', 1);
   app.use(helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow agent fetches
-    contentSecurityPolicy: false, // API — no CSP needed
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false,
+    frameguard: { action: 'deny' },
+    referrerPolicy: { policy: 'no-referrer' },
+    hsts: config.isDev ? false : { maxAge: 31536000, includeSubDomains: true, preload: true },
   }));
 
   // ── CORS ────────────────────────────────────────────────────────────────
-  const origin = config.frontendUrl
-    ? [config.frontendUrl, 'http://localhost:3000']
-    : true; // allow all in dev / when no FRONTEND_URL set
-
-  app.use(cors({ origin, credentials: true }));
+  app.use(cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true);
+      if (config.corsAllowedOrigins.includes(origin)) return cb(null, true);
+      return cb(Object.assign(new Error('CORS origin denied'), { status: 403 }));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type'],
+    maxAge: 600,
+  }));
 
   // ── Body parsing ────────────────────────────────────────────────────────
-  app.use(express.json({ limit: '1mb' }));
-  app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+  app.use(express.json({ limit: '256kb' }));
+  app.use(express.urlencoded({ extended: false, limit: '64kb' }));
 
   // ── Request logging ─────────────────────────────────────────────────────
   app.use(requestLogger);
+  app.use('/api', apiLimiter);
 
   // ── Health check ─────────────────────────────────────────────────────────
   // Mounted before auth/rate-limiting so load balancers always get a fast response

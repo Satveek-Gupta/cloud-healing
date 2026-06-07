@@ -2,6 +2,7 @@
 import Link            from 'next/link';
 import Image           from 'next/image';
 import { usePathname } from 'next/navigation';
+import { UserButton, useAuth } from '@clerk/nextjs';
 import { useRealtime } from '@/context/RealtimeContext';
 
 const TABS = [
@@ -20,9 +21,16 @@ const STATUS_META = {
 export default function TopBar() {
   const pathname       = usePathname();
   const ctx            = useRealtime();
+  const { isSignedIn } = useAuth();
   const realtimeStatus = ctx?.realtimeStatus ?? 'connecting';
   const notifications  = ctx?.notifications  ?? [];
+  const role           = ctx?.currentUser?.role;
   const sm             = STATUS_META[realtimeStatus] || STATUS_META.connecting;
+  const tabs = [
+    ...TABS,
+    ...(role === 'ADMIN' || role === 'SUPERADMIN' ? [{ href: '/admin', label: 'Admin' }] : []),
+    ...(role === 'SUPERADMIN' ? [{ href: '/superadmin', label: 'Superadmin' }] : []),
+  ];
 
   return (
     <header className="topbar">
@@ -41,7 +49,7 @@ export default function TopBar() {
 
       {/* ── Sub-nav pill tabs (centred) ───────────────────── */}
       <nav className="topbar-tabs" aria-label="Main navigation">
-        {TABS.map(({ href, label }) => {
+        {tabs.map(({ href, label }) => {
           const active = pathname === href;
           return (
             <Link key={href} href={href} className={`topbar-tab${active ? ' active' : ''}`}>
@@ -84,6 +92,9 @@ export default function TopBar() {
         <time className="topbar-time" suppressHydrationWarning>
           {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
         </time>
+        {isSignedIn && (
+          <UserButton afterSignOutUrl="/sign-in" />
+        )}
       </div>
     </header>
   );

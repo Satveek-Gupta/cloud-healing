@@ -39,7 +39,7 @@ function errorHandler(err, req, res, next) {
                : typeof err.statusCode === 'number' ? err.statusCode
                : 500;
 
-  const message = err.message || 'Internal server error';
+  const message = status >= 500 && !config.isDev ? 'Internal server error' : (err.message || 'Internal server error');
   console.error(`[ErrorHandler] ${req.method} ${req.originalUrl} → ${status}: ${message}`);
 
   res.status(status).json({

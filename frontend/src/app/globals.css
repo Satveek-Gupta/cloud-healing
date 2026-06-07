@@ -244,6 +244,12 @@ img, svg { display: block; }
   margin: 0 auto;
 }
 
+.auth-page {
+  min-height: calc(100vh - var(--topbar-h) - 64px);
+  display: grid;
+  place-items: center;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CARDS  (feature-card / feature-card-bordered from DESIGN.md)
 ═══════════════════════════════════════════════════════════════ */

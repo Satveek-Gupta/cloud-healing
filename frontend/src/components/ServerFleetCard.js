@@ -38,9 +38,12 @@ export default function ServerFleetCard({ s, prevStatus, index = 0, onRemove, li
 
   useEffect(() => {
     if (prevStatus && prevStatus !== s.status) {
-      setFlash(true);
-      const t = setTimeout(() => setFlash(false), 800);
-      return () => clearTimeout(t);
+      const start = setTimeout(() => setFlash(true), 0);
+      const end = setTimeout(() => setFlash(false), 800);
+      return () => {
+        clearTimeout(start);
+        clearTimeout(end);
+      };
     }
   }, [s.status, prevStatus]);
 

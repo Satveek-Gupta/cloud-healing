@@ -22,6 +22,7 @@ const serversRouter    = require('./servers');
 const metricsRouter    = require('./metrics');
 const commandsRouter   = require('./commands');
 const incidentsRouter  = require('./incidents');
+const userRouter       = require('./user');
 
 const router = Router();
 
@@ -29,6 +30,7 @@ const router = Router();
 router.use('/servers',  serversRouter);
 router.use('/metrics',  metricsRouter);
 router.use('/commands', commandsRouter);
+router.use('/',         userRouter);
 router.use('/',         incidentsRouter);
 
 // ── Agent backward-compat: old registration path ──────────────────────────────

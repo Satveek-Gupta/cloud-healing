@@ -15,6 +15,10 @@ const { supabase, isSupabaseReady } = require('../lib/supabase');
 const { getMemLatestDiagnosis } = require('../lib/liveState');
 const { applyOnlineStatus } = require('../services/serverStatus');
 const { asyncHandler }      = require('../middleware/errorHandler');
+const { requireAuth }       = require('../middleware/auth');
+const { requireAdmin }      = require('../middleware/admin');
+const { sseLimiter }        = require('../middleware/security');
+const { logAuditEvent }     = require('../lib/audit');
 const sseLib                = require('../lib/sse');
 const {
   MAX_INCIDENTS_LIMIT,
@@ -26,33 +30,57 @@ const router = Router();
 // ── GET /api/events — SSE stream ──────────────────────────────────────────────
 // The frontend connects here once. The backend pushes events as they happen.
 // Browser EventSource auto-reconnects on drop — no extra logic needed.
-router.get('/events', (req, res) => {
-  res.setHeader('Content-Type',      'text/event-stream');
-  res.setHeader('Cache-Control',     'no-cache, no-transform');
-  res.setHeader('Connection',        'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // disable Nginx proxy buffering
-  res.flushHeaders();
+function openEventStream(channel) {
+  return (req, res, next) => {
+    try {
+      res.setHeader('Content-Type',      'text/event-stream');
+      res.setHeader('Cache-Control',     'no-cache, no-transform');
+      res.setHeader('Connection',        'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.setHeader('Vary',              'Authorization, Cookie');
 
-  // Confirm connection to the client
-  res.write(`event: connected\ndata: ${JSON.stringify({ ts: Date.now() })}\n\n`);
+      sseLib.addClient(res, {
+        user: req.user,
+        channel,
+        ip: req.ip,
+      });
 
-  sseLib.addClient(res);
+      res.flushHeaders();
+      res.write(`event: connected\ndata: ${JSON.stringify({
+        ts: Date.now(),
+        role: req.user.role,
+        channel,
+      })}\n\n`);
 
-  // Heartbeat every 25s — keeps connection alive through proxies and load balancers
-  const heartbeat = setInterval(() => {
-    try { res.write(': heartbeat\n\n'); } catch { clearInterval(heartbeat); }
-  }, 25_000);
+      const heartbeat = setInterval(() => {
+        try { res.write(': heartbeat\n\n'); } catch { clearInterval(heartbeat); }
+      }, 25_000);
 
-  req.on('close', () => {
-    clearInterval(heartbeat);
-    sseLib.removeClient(res);
-  });
-});
+      const maxAge = setTimeout(() => {
+        try { res.write('event: session:refresh\ndata: {}\n\n'); } catch {}
+        res.end();
+      }, 10 * 60_000);
+
+      req.on('close', () => {
+        clearInterval(heartbeat);
+        clearTimeout(maxAge);
+        sseLib.removeClient(res);
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+}
+
+router.get('/events', sseLimiter, requireAuth, openEventStream('all'));
+router.get('/events/servers', sseLimiter, requireAuth, openEventStream('servers'));
+router.get('/events/incidents', sseLimiter, requireAuth, openEventStream('incidents'));
+router.get('/events/diagnosis', sseLimiter, requireAuth, openEventStream('diagnosis'));
 
 
 
 // ── GET /api/history ──────────────────────────────────────────────────────────
-router.get('/history', asyncHandler(async (req, res) => {
+router.get('/history', requireAuth, asyncHandler(async (req, res) => {
   const limit = Math.min(
     parseInt(req.query.limit, 10) || DEFAULT_INCIDENTS_LIMIT,
     MAX_INCIDENTS_LIMIT
@@ -67,7 +95,7 @@ router.get('/history', asyncHandler(async (req, res) => {
 }));
 
 // ── GET /api/stats ────────────────────────────────────────────────────────────
-router.get('/stats', asyncHandler(async (req, res) => {
+router.get('/stats', requireAuth, asyncHandler(async (req, res) => {
   if (!isSupabaseReady()) {
     return res.json({ healingEvents: 0, cpuUsage: '—', memoryUsage: '—', uptime: '—' });
   }
@@ -97,7 +125,7 @@ router.get('/stats', asyncHandler(async (req, res) => {
 }));
 
 // ── GET /api/latest ───────────────────────────────────────────────────────────
-router.get('/latest', asyncHandler(async (req, res) => {
+router.get('/latest', requireAuth, asyncHandler(async (req, res) => {
   if (!isSupabaseReady()) {
     return res.json({ servers: [], latest_diagnosis: getMemLatestDiagnosis() });
   }
@@ -111,6 +139,15 @@ router.get('/latest', asyncHandler(async (req, res) => {
   const latest_diagnosis = diagRes.data?.[0] || getMemLatestDiagnosis() || null;
 
   res.json({ servers, latest_diagnosis });
+}));
+
+router.post('/incidents/:id/ack', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  await logAuditEvent({
+    actorId: req.user.id,
+    action: 'incident.acknowledge',
+    metadata: { incident_id: req.params.id, ip: req.ip },
+  });
+  res.json({ acknowledged: true, id: req.params.id });
 }));
 
 module.exports = router;

@@ -98,5 +98,21 @@ If your network blocks Port 22, use our **Base64 Relay** method via the provider
 
 ---
 
+## 🔍 Demo Access
+
+Want to explore the dashboard without setting up your own environment? Use the read-only demo account:
+
+| Field    | Value                  |
+|----------|------------------------|
+| Email    | `demo@satveek.dev`     |
+| Password | `SelfHeal2026!`        |
+| Role     | `USER` (read-only)     |
+
+> **What you can do:** Browse the dashboard, view server metrics, inspect incident history, and watch the AI healing pipeline in real time.
+>
+> **What's restricted:** Registering new nodes, dispatching remediation commands (Restart / Scale Up / Kill Process), and deleting servers.
+
+---
+
 ## 📄 License
 MIT © Satveek Gupta

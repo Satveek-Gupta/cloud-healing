@@ -6,10 +6,12 @@ import { UserButton, useAuth } from '@clerk/nextjs';
 import { useRealtime } from '@/context/RealtimeContext';
 
 const TABS = [
-  { href: '/',          label: 'Overview'     },
-  { href: '/dashboard', label: 'Dashboard'    },
-  { href: '/servers',   label: 'Servers'      },
-  { href: '/history',   label: 'Incident Log' },
+  { href: '/',               label: 'Overview'       },
+  { href: '/dashboard',      label: 'Dashboard'      },
+  { href: '/infrastructure', label: 'Infrastructure' },
+  { href: '/incidents',      label: 'Incidents'      },
+  { href: '/servers',        label: 'Servers'        },
+  { href: '/history',        label: 'Incident Log'   },
 ];
 
 const STATUS_META = {

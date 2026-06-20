@@ -1,0 +1,17 @@
+{
+  "name": "selfheal-processing-engine",
+  "version": "1.0.0",
+  "description": "SelfHeal event processing engine — Redis consumer + anomaly detection",
+  "main": "src/index.js",
+  "engines": { "node": ">=18.0.0" },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "ioredis": "^5.3.2",
+    "@supabase/supabase-js": "^2.103.0",
+    "dotenv": "^17.4.2"
+  },
+  "license": "ISC"
+}

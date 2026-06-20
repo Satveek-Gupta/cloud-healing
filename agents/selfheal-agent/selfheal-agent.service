@@ -1,0 +1,18 @@
+[Unit]
+Description=SelfHeal Telemetry Agent v1
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/selfheal-agent
+ExecStart=/usr/bin/node /opt/selfheal-agent/src/index.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=selfheal-agent
+EnvironmentFile=/opt/selfheal-agent/.env
+
+[Install]
+WantedBy=multi-user.target

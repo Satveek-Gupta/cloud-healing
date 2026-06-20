@@ -9,6 +9,7 @@
  *   /api/servers/*    → routes/servers.js
  *   /api/metrics/*    → routes/metrics.js
  *   /api/commands/*   → routes/commands.js
+ *   /api/agents/*     → routes/agents.js
  *   /api/history      → routes/incidents.js
  *   /api/stats        → routes/incidents.js
  *   /api/latest       → routes/incidents.js
@@ -23,6 +24,7 @@ const metricsRouter    = require('./metrics');
 const commandsRouter   = require('./commands');
 const incidentsRouter  = require('./incidents');
 const userRouter       = require('./user');
+const agentsRouter     = require('./agents');
 
 const router = Router();
 
@@ -30,6 +32,7 @@ const router = Router();
 router.use('/servers',  serversRouter);
 router.use('/metrics',  metricsRouter);
 router.use('/commands', commandsRouter);
+router.use('/agents',   agentsRouter);
 router.use('/',         userRouter);
 router.use('/',         incidentsRouter);
 
